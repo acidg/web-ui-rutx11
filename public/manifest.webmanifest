@@ -1,0 +1,11 @@
+{
+  "name": "RUTX11 Manager",
+  "short_name": "RUTX11",
+  "description": "Minimal mobile WebUI for Teltonika RUTX11",
+  "start_url": "/mini/",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#0a84ff",
+  "orientation": "portrait-primary",
+  "icons": []
+}

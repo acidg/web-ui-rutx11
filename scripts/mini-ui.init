@@ -1,0 +1,42 @@
+#!/bin/sh /etc/rc.common
+# Init script for the RUTX11 mini WebUI.
+# Mounts a writable overlay on /www so /www/mini/ can be populated
+# from /usr/local/share/mini-ui/ (persistent storage on /overlay).
+# Registered as a procd service; runs after network is up.
+
+START=95
+STOP=10
+USE_PROCD=1
+
+STORE="/usr/local/share/mini-ui"
+WWW_MINI="/www/mini"
+UPPER="/tmp/www-upper"
+WORK="/tmp/www-work"
+
+mount_overlay() {
+  if mount | grep -q "overlay on /www "; then
+    return 0
+  fi
+  mkdir -p "$UPPER" "$WORK"
+  mount -t overlay overlay \
+    -o "lowerdir=/www,upperdir=${UPPER},workdir=${WORK}" /www
+}
+
+sync_files() {
+  mkdir -p "$WWW_MINI"
+  cp -r "${STORE}/." "${WWW_MINI}/"
+}
+
+start_service() {
+  mount_overlay
+  sync_files
+}
+
+stop_service() {
+  umount /www 2>/dev/null || true
+  rm -rf "$UPPER" "$WORK"
+}
+
+reload_service() {
+  sync_files
+}

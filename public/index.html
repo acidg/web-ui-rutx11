@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a84ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RUTX11">
+  <title>RUTX11</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Login -->
+  <div id="screen-login" class="screen">
+    <div class="login-box">
+      <div class="logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="var(--accent)"/>
+          <path d="M10 30 Q24 12 38 30" stroke="white" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <path d="M15 34 Q24 20 33 34" stroke="white" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <circle cx="24" cy="38" r="3" fill="white"/>
+        </svg>
+        <span>RUTX11</span>
+      </div>
+      <p id="login-message" class="message hidden"></p>
+      <form id="login-form" autocomplete="on" novalidate>
+        <label for="input-password">Router password</label>
+        <input id="input-password" type="password" autocomplete="current-password"
+               placeholder="admin password" required>
+        <button type="submit" id="btn-login">Sign in</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="screen-status" class="screen hidden">
+    <header><h1>Status</h1></header>
+    <main id="status-content">
+      <p class="placeholder">Loading…</p>
+    </main>
+  </div>
+
+  <!-- Add WiFi -->
+  <div id="screen-add" class="screen hidden">
+    <header><h1>Add WiFi uplink</h1></header>
+    <main id="add-content">
+      <p class="placeholder">Coming in Phase 4</p>
+    </main>
+  </div>
+
+  <!-- Manage -->
+  <div id="screen-manage" class="screen hidden">
+    <header><h1>Manage uplinks</h1></header>
+    <main id="manage-content">
+      <p class="placeholder">Coming in Phase 5</p>
+    </main>
+  </div>
+
+  <!-- Bottom nav (hidden on login) -->
+  <nav id="bottom-nav" class="bottom-nav hidden" role="navigation" aria-label="Main">
+    <button class="nav-btn" data-screen="status" aria-label="Status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M1 6s4-4 11-4 11 4 11 4"/>
+        <path d="M5 10s2.5-2.5 7-2.5S19 10 19 10"/>
+        <path d="M8.5 14s1.5-1.5 3.5-1.5 3.5 1.5 3.5 1.5"/>
+        <line x1="12" y1="19" x2="12.01" y2="19"/>
+      </svg>
+      Status
+    </button>
+    <button class="nav-btn" data-screen="add" aria-label="Add WiFi">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      Add WiFi
+    </button>
+    <button class="nav-btn" data-screen="manage" aria-label="Manage">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="8" y1="6" x2="21" y2="6"/>
+        <line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/>
+        <line x1="3" y1="12" x2="3.01" y2="12"/>
+        <line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+      Manage
+    </button>
+  </nav>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
