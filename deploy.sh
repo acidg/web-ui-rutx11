@@ -1,19 +1,20 @@
 #!/bin/sh
 # Deploy public/ to the router.
 # Usage: ./deploy.sh [router-ip]
-# Password read from .env (ROUTER_PASS=...) or ROUTER_PASS env var.
+# Prompts for the router password unless ROUTER_PASS is set in the environment.
 
 set -eu
-
-if [ -f ./.env ]; then
-  # shellcheck disable=SC1091
-  . ./.env
-fi
 
 ROUTER="${1:-192.168.42.1}"
 STORE="/usr/local/share/mini-ui"
 
-: "${ROUTER_PASS:?set ROUTER_PASS in .env or environment}"
+if [ -z "${ROUTER_PASS:-}" ]; then
+  printf "Router password: "
+  stty -echo
+  read -r ROUTER_PASS
+  stty echo
+  echo
+fi
 
 # On NixOS sshpass is not in PATH — transparently re-run inside nix-shell.
 if ! command -v sshpass > /dev/null 2>&1; then
