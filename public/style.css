@@ -11,7 +11,6 @@
   --border: #c6c6c8;
   --radius: 12px;
   --radius-sm: 8px;
-  --nav-height: 72px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -27,6 +26,8 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+.hidden { display: none; }
+
 html, body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -41,8 +42,12 @@ html, body {
 
 .screen {
   position: fixed;
-  inset: 0;
+  top: 0;
   bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -51,7 +56,7 @@ html, body {
 .screen.hidden { display: none; }
 
 .screen:not(#screen-login) {
-  bottom: calc(var(--nav-height) + var(--safe-bottom));
+  bottom: var(--safe-bottom);
 }
 
 header {
@@ -220,47 +225,23 @@ button[type="submit"],
 
 .card-row:last-child { border-bottom: none; }
 
-/* ── Bottom nav ── */
+/* ── Back button ── */
 
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(var(--nav-height) + var(--safe-bottom));
-  padding-bottom: var(--safe-bottom);
-  background: var(--card);
-  border-top: 1px solid var(--border);
+.header-with-back {
   display: flex;
-  align-items: stretch;
-}
-
-.bottom-nav.hidden { display: none; }
-
-.nav-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  gap: 12px;
+}
+
+.btn-back {
   background: none;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: 0;
-  padding: 8px 4px;
-  min-height: var(--nav-height);
-}
-
-.nav-btn svg {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.nav-btn.active {
   color: var(--accent);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 4px 0;
+  min-height: unset;
+  border-radius: 0;
+  flex-shrink: 0;
 }
 
 /* ── Misc ── */

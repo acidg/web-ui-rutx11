@@ -1,14 +1,13 @@
 import {
   getToken, clearToken, login, authExpired,
   fetchInterfacesStatus, fetchWirelessConfig, fetchModems, fetchWirelessStatus,
-  setWifiMetric,
+  setWifiMetric, deleteWifiSta, apiFetch,
 } from './api.js';
 import { renderAddScreen } from './add.js';
-import { renderManageScreen } from './manage.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const SCREENS = ['login', 'status', 'add', 'manage'];
+const SCREENS = ['login', 'status', 'add'];
 const REFRESH_MS = 5000;
 
 // ── Routing ────────────────────────────────────────────────────────────────
@@ -23,20 +22,8 @@ function showScreen(name) {
     document.getElementById(`screen-${id}`).classList.toggle('hidden', id !== name);
   }
 
-  const nav = document.getElementById('bottom-nav');
-  if (name === 'login') {
-    nav.classList.add('hidden');
-    return;
-  }
-
-  nav.classList.remove('hidden');
-  for (const btn of nav.querySelectorAll('.nav-btn')) {
-    btn.classList.toggle('active', btn.dataset.screen === name);
-  }
-
   if (name === 'status') { startRefresh(); }
   if (name === 'add')    { renderAddScreen(); }
-  if (name === 'manage') { renderManageScreen(); }
 }
 
 function logout() {
@@ -87,7 +74,8 @@ function startRefresh() {
   renderStatus();
   stopRefresh();
   refreshTimer = setInterval(() => {
-    if (!document.hidden) { renderStatus(); }
+    const diagOpen = !document.getElementById('diagnostics-out')?.classList.contains('hidden');
+    if (!document.hidden && !diagOpen) { renderStatus(); }
   }, REFRESH_MS);
 }
 
@@ -117,7 +105,7 @@ async function renderStatus() {
     const wifiIface = wifiSta?.network ? ifaces.find(i => i.name === wifiSta.network) : null;
 
     content.innerHTML = buildStatusHtml(ifaces, wirelessCfg, modems, wifiIface, wirelessStatus);
-    bindStatusEvents(wifiIface, wifiSta);
+    bindStatusEvents(wifiIface, wifiSta, ifaces);
   } catch (err) {
     if (err.message !== 'session-expired') {
       content.innerHTML = `<p class="message error">${err.message}</p>`;
@@ -191,10 +179,9 @@ function buildStatusHtml(ifaces, wirelessCfg, modems, wifiIface, wirelessStatus)
       </div>
     </div>` : ''}
 
-    ${stas.length ? `
     <div class="card">
       <div class="card-title">Campsite WiFi</div>
-      ${stas.map(sta => {
+      ${stas.length ? stas.map(sta => {
         const iface = ifaces.find(i => i.name === sta.network);
         const connected = iface?.is_up === true;
         const ws = wirelessStatus?.find(w => w.mode === 'sta' && w.id === sta.id);
@@ -208,23 +195,34 @@ function buildStatusHtml(ifaces, wirelessCfg, modems, wifiIface, wirelessStatus)
             <div class="fw-600">${esc(sta.ssid)}</div>
             <div class="text-muted text-sm">${subtext}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px">
             ${connected && ws ? signalSvg(quality, 70) : ''}
-            <span class="badge ${connected ? 'badge-green' : 'badge-orange'}">
-              ${connected ? 'Connected' : 'Saved'}
-            </span>
+            <button class="btn-danger btn-disconnect"
+                    data-sta-id="${escAttr(sta.id)}"
+                    data-network="${escAttr(sta.network ?? '')}"
+                    style="min-height:36px;padding:0 12px;font-size:14px">
+              Disconnect
+            </button>
           </div>
         </div>
         `;
-      }).join('')}
-    </div>` : ''}
+      }).join('') : `
+      <div class="card-row">
+        <span class="text-muted">No network saved</span>
+        <button class="btn-primary" id="btn-scan-wifi"
+                style="min-height:36px;padding:0 16px;font-size:14px">
+          Scan
+        </button>
+      </div>
+      `}
+    </div>
 
     <button class="btn-secondary w-full" id="btn-diagnostics">Show diagnostics</button>
     <pre id="diagnostics-out" class="diag-out hidden"></pre>
   `;
 }
 
-function bindStatusEvents(wifiIface, wifiSta) {
+function bindStatusEvents(wifiIface, wifiSta, ifaces) {
   document.getElementById('btn-toggle-wifi')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     if (btn.disabled) { return; }
@@ -239,6 +237,30 @@ function bindStatusEvents(wifiIface, wifiSta) {
       btn.disabled = false;
     }
   });
+
+  document.querySelectorAll('.btn-disconnect').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const { staId, network } = btn.dataset;
+      btn.disabled = true;
+      btn.textContent = 'Disconnecting…';
+      try {
+        await deleteWifiSta(staId);
+        const ifaceId = ifaces.find(i => i.name === network)?.id;
+        if (ifaceId) {
+          await apiFetch(`/interfaces/config/${ifaceId}`, { method: 'DELETE' }).catch(() => {});
+        }
+        await renderStatus();
+      } catch (err) {
+        if (err.message !== 'session-expired') {
+          btn.disabled = false;
+          btn.textContent = 'Disconnect';
+          alert(err.message);
+        }
+      }
+    });
+  });
+
+  document.getElementById('btn-scan-wifi')?.addEventListener('click', () => showScreen('add'));
 
   document.getElementById('btn-diagnostics')?.addEventListener('click', loadDiagnostics);
 }
@@ -281,13 +303,10 @@ async function loadDiagnostics() {
   }
 }
 
-// ── Nav ────────────────────────────────────────────────────────────────────
+// ── Back buttons ───────────────────────────────────────────────────────────
 
-function initNav() {
-  document.getElementById('bottom-nav').addEventListener('click', (e) => {
-    const btn = e.target.closest('.nav-btn');
-    if (btn?.dataset.screen) { showScreen(btn.dataset.screen); }
-  });
+function initBackButtons() {
+  document.getElementById('btn-back-add').addEventListener('click', () => showScreen('status'));
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
@@ -311,6 +330,8 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
+function escAttr(s) { return String(s ?? '').replace(/"/g, '&quot;'); }
+
 function showMsg(el, text, type) {
   el.textContent = text;
   el.className = `message ${type}`;
@@ -330,5 +351,5 @@ document.addEventListener('visibilitychange', () => {
 });
 
 initLogin();
-initNav();
+initBackButtons();
 showScreen(getToken() ? 'status' : 'login');

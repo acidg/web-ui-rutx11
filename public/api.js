@@ -5,6 +5,9 @@ const TOKEN_KEY = 'rutx11_token';
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
+let storedPassword = null;
+let renewalPromise = null;
+
 export async function login(password) {
   const res = await fetch('/api/login', {
     method: 'POST',
@@ -16,12 +19,13 @@ export async function login(password) {
     throw new Error(json.errors?.[0]?.error || 'Login failed');
   }
   localStorage.setItem(TOKEN_KEY, json.data.token);
+  storedPassword = password;
 }
 
-// Dispatched when a 401/session-expired is detected so the app can re-prompt.
+// Dispatched when session renewal fails and the user must re-authenticate.
 export const authExpired = new EventTarget();
 
-export async function apiFetch(path, opts = {}) {
+export async function apiFetch(path, opts = {}, allowRetry = true) {
   const token = getToken();
   const headers = { 'Content-Type': 'application/json', ...opts.headers };
   if (token) { headers['Authorization'] = `Bearer ${token}`; }
@@ -30,8 +34,19 @@ export async function apiFetch(path, opts = {}) {
   const json = await res.json();
 
   if (!json.success) {
-    if (json.errors?.[0]?.code === 120) {
+    if (res.status === 401 || json.errors?.[0]?.code === 120) {
       clearToken();
+      if (storedPassword && allowRetry) {
+        if (!renewalPromise) {
+          renewalPromise = login(storedPassword)
+            .catch(() => { storedPassword = null; })
+            .finally(() => { renewalPromise = null; });
+        }
+        try {
+          await renewalPromise;
+          if (getToken()) { return apiFetch(path, opts, false); }
+        } catch { /* renewal failed, fall through */ }
+      }
       authExpired.dispatchEvent(new Event('expired'));
       throw new Error('session-expired');
     }
