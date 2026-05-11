@@ -5,7 +5,8 @@
 
 set -eu
 
-ROUTER="${1:-192.168.42.1}"
+GATEWAY=$(ip route show default 2>/dev/null | awk '/default/ { print $3; exit }')
+ROUTER="${1:-${GATEWAY:-192.168.42.1}}"
 STORE="/usr/local/share/mini-ui"
 
 if [ -z "${ROUTER_PASS:-}" ]; then

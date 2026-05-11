@@ -15,10 +15,11 @@ The stock RutOS WebUI is painful on mobile. Teltonika's app "Camper" mode connec
 ## Deploy
 
 ```sh
-./deploy.sh   # scp public/ to root@<router-ip>:/www/mini/
+./deploy.sh           # auto-detects router IP from default gateway
+./deploy.sh 192.168.1.1   # or specify IP explicitly
 ```
 
-Open `https://<router-ip>/mini/` — add to home screen for PWA use.
+Prompts for the router password. Open `https://<router-ip>/mini/` — add to home screen for PWA use.
 
 ## Stack
 
