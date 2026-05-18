@@ -115,6 +115,31 @@ async function renderStatus() {
   }
 }
 
+function wifiState(iface, ws, isActiveUplink) {
+  if (!ws) {
+    return { tone: 'orange', label: 'Saved', detail: 'Waiting for status' };
+  }
+  if (ws.disabled) {
+    return { tone: 'orange', label: 'Disabled', detail: 'Wireless interface is disabled' };
+  }
+  const associated = ws.wpa_state === 'COMPLETED';
+  const hasIP = (iface?.ipaddrs?.length ?? 0) > 0;
+  if (!associated) {
+    const transient = ['ASSOCIATING', 'AUTHENTICATING', 'SCANNING', 'CONNECTING']
+      .includes(ws.wpa_state);
+    return transient
+      ? { tone: 'orange', label: 'Connecting…', detail: ws.wpa_state.toLowerCase() }
+      : { tone: 'red', label: 'Not connected', detail: 'AP not responding — check signal or password' };
+  }
+  if (!hasIP) {
+    return { tone: 'orange', label: 'No IP', detail: 'Associated, waiting for DHCP lease' };
+  }
+  if (isActiveUplink) {
+    return { tone: 'green', label: 'Online', detail: 'Routing traffic' };
+  }
+  return { tone: 'orange', label: 'Standby', detail: 'Mobile preferred — toggle "Prefer WiFi" above to switch' };
+}
+
 function activeUplink(ifaces) {
   const withDefault = ifaces.filter(i =>
     i.route?.some(r => r.target === '0.0.0.0' && r.mask === 0)
@@ -183,20 +208,27 @@ function buildStatusHtml(ifaces, wirelessCfg, modems, wifiIface, wirelessStatus)
       <div class="card-title">Campsite WiFi</div>
       ${stas.length ? stas.map(sta => {
         const iface = ifaces.find(i => i.name === sta.network);
-        const connected = iface?.is_up === true;
         const ws = wirelessStatus?.find(w => w.mode === 'sta' && w.id === sta.id);
+        const isActive = uplink?.name === sta.network;
+        const state = wifiState(iface, ws, isActive);
+        const associated = ws?.wpa_state === 'COMPLETED';
         const quality = ws?.devices?.[0]?.quality ?? ws?.quality ?? 0;
-        const subtext = connected && ws
-          ? `${ws.band} · ${ws.signal} dBm · ${Math.round(ws.bitrate / 1e6)} Mbps`
-          : Array.isArray(sta.device) ? sta.device.join(', ') : (sta.device ?? '');
+        const radio = Array.isArray(sta.device) ? sta.device[0] : sta.device;
+        const band = radio === 'radio1' ? '5 GHz' : '2.4 GHz';
+        const subtext = associated && ws?.signal
+          ? `${band} · ${ws.signal} dBm · ${Math.round((ws.bitrate ?? 0) / 1e6)} Mbps`
+          : state.detail;
         return `
         <div class="card-row">
-          <div>
-            <div class="fw-600">${esc(sta.ssid)}</div>
-            <div class="text-muted text-sm">${subtext}</div>
+          <div style="min-width:0;flex:1">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span class="fw-600">${esc(sta.ssid)}</span>
+              <span class="badge badge-${state.tone}">${state.label}</span>
+            </div>
+            <div class="text-muted text-sm" style="margin-top:2px">${esc(subtext)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            ${connected && ws ? signalSvg(quality, 70) : ''}
+            ${associated ? signalSvg(quality, 70) : ''}
             <button class="btn-danger btn-disconnect"
                     data-sta-id="${escAttr(sta.id)}"
                     data-network="${escAttr(sta.network ?? '')}"

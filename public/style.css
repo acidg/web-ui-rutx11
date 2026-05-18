@@ -138,6 +138,26 @@ input[type="search"] {
 
 input:focus { border-color: var(--accent); }
 
+.pass-wrap {
+  position: relative;
+  margin-top: 6px;
+}
+
+.pass-wrap input { padding-right: 64px; }
+
+.btn-pass-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  height: 36px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* ── Buttons ── */
 
 button {

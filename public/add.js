@@ -5,12 +5,13 @@ import { scanWifi, joinWifi } from './api.js';
 export function renderAddScreen() {
   const content = document.getElementById('add-content');
   content.innerHTML = `
-    <button class="btn-primary w-full" id="btn-scan">Scan for networks</button>
+    <button class="btn-primary w-full" id="btn-scan" disabled>Scanning…</button>
     <div id="scan-results" class="mt-8"></div>
     <div id="add-form" class="hidden"></div>
     <p id="add-msg" class="message hidden mt-8"></p>
   `;
   content.onclick = handleClick;
+  doScan();
 }
 
 // ── Event dispatch ─────────────────────────────────────────────────────────
@@ -24,10 +25,11 @@ async function handleClick(e) {
   const row = e.target.closest('.ssid-row');
   if (!btn && !row) { return; }
 
-  if (btn?.id === 'btn-scan')   { await doScan(); return; }
-  if (btn?.id === 'btn-cancel') { clearForm(); return; }
-  if (btn?.id === 'btn-save')   { await doSave(); return; }
-  if (row)                      { selectRow(row); }
+  if (btn?.id === 'btn-scan')        { await doScan(); return; }
+  if (btn?.id === 'btn-cancel')      { clearForm(); return; }
+  if (btn?.id === 'btn-save')        { await doSave(); return; }
+  if (btn?.id === 'btn-toggle-pass') { togglePassVisibility(btn); return; }
+  if (row)                           { selectRow(row); }
 }
 
 // ── Scan ───────────────────────────────────────────────────────────────────
@@ -133,8 +135,12 @@ function showForm(ssid, bssid, enc, radio) {
       <div class="fw-600" style="margin-bottom:12px">${esc(ssid)}</div>
       ${open ? '<p class="text-muted text-sm">Open network — no password required.</p>' : `
         <label for="input-wifi-pass">Password</label>
-        <input id="input-wifi-pass" type="password" autocomplete="new-password"
-               placeholder="Network password" style="margin-top:6px">`}
+        <div class="pass-wrap">
+          <input id="input-wifi-pass" type="password" autocomplete="new-password"
+                 placeholder="Network password">
+          <button class="btn-pass-toggle" id="btn-toggle-pass" type="button"
+                  aria-label="Show password">Show</button>
+        </div>`}
       <input type="hidden" id="add-ssid"  value="${escAttr(ssid)}">
       <input type="hidden" id="add-bssid" value="${escAttr(bssid)}">
       <input type="hidden" id="add-enc"   value="${escAttr(enc)}">
@@ -147,6 +153,15 @@ function showForm(ssid, bssid, enc, radio) {
   `;
   form.classList.remove('hidden');
   if (!open) { document.getElementById('input-wifi-pass').focus(); }
+}
+
+function togglePassVisibility(btn) {
+  const input = document.getElementById('input-wifi-pass');
+  if (!input) { return; }
+  const hidden = input.type === 'password';
+  input.type = hidden ? 'text' : 'password';
+  btn.textContent = hidden ? 'Hide' : 'Show';
+  btn.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
 }
 
 function clearForm() {

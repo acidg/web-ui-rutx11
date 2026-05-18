@@ -71,8 +71,9 @@ export async function scanWifi(radio = 'radio0') {
   });
 }
 
-// Join a WiFi network — creates the STA and triggers connection.
-// use_cache=true tells the API to use our recent scan results.
+// Join a WiFi network. The API atomically creates the STA, an auto-named DHCP
+// network interface, and attaches it to the wan firewall zone — and auto-applies
+// (wpa_supplicant picks up the new config immediately). No reload call needed.
 export async function joinWifi({ bssid, ssid, password, device }) {
   const data = { bssid, ssid, device };
   if (password) { data.password = password; }
