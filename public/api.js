@@ -93,12 +93,15 @@ export async function reconnectWifi(staId) {
 export const deleteWifiSta = (id) =>
   apiFetch(`/wireless/interfaces/config/${id}`, { method: 'DELETE' });
 
-// Update the metric of the wifi uplink interface, then reconnect so
-// netifd re-installs the route with the new metric.
-export async function setWifiMetric(ifaceId, staId, metric) {
-  await apiFetch(`/interfaces/config/${ifaceId}`, {
+export const setInterfaceMetric = (ifaceId, metric) =>
+  apiFetch(`/interfaces/config/${ifaceId}`, {
     method: 'PUT',
     body: JSON.stringify({ data: { metric: String(metric) } }),
   });
+
+// Update the metric of the wifi uplink interface, then reconnect so
+// netifd re-installs the route with the new metric.
+export async function setWifiMetric(ifaceId, staId, metric) {
+  await setInterfaceMetric(ifaceId, metric);
   await reconnectWifi(String(staId));
 }

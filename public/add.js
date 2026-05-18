@@ -1,6 +1,6 @@
 // Add WiFi uplink screen — scan, pick, enter password, join.
 
-import { scanWifi, joinWifi } from './api.js';
+import { scanWifi, joinWifi, fetchWirelessConfig, setInterfaceMetric } from './api.js';
 
 export function renderAddScreen() {
   const content = document.getElementById('add-content');
@@ -191,6 +191,7 @@ async function doSave() {
 
   try {
     await joinWifi({ bssid, ssid, password: key || undefined, device: radio });
+    await preferNewWifi({ ssid, bssid, device: radio });
     showMsg(`"${esc(ssid)}" added — connecting…`, 'info');
     setTimeout(() => navigateTo('status'), 1800);
   } catch (err) {
@@ -199,6 +200,31 @@ async function doSave() {
     btn.disabled = false;
     btn.textContent = 'Add network';
   }
+}
+
+// Set metric=0 on the freshly-joined STA's network so WiFi wins the default
+// route by default. Best-effort: a failure here doesn't undo the join.
+async function preferNewWifi({ ssid, bssid, device }) {
+  try {
+    const cfg = await fetchWirelessConfig();
+    const sta = findNewSta(cfg, { ssid, bssid, device });
+    if (!sta?.network) { return; }
+    await setInterfaceMetric(sta.network, 0);
+  } catch (err) {
+    console.warn('Could not set default metric on new WiFi:', err);
+  }
+}
+
+function findNewSta(cfg, { ssid, bssid, device }) {
+  const candidates = cfg.filter(w => w.mode === 'sta' && w.ssid === ssid);
+  const bssidLc = bssid?.toLowerCase();
+  const exact = candidates.find(s => {
+    const dev = Array.isArray(s.device) ? s.device[0] : s.device;
+    if (dev !== device) { return false; }
+    if (!bssidLc) { return true; }
+    return (s.bssid ?? '').toLowerCase() === bssidLc;
+  });
+  return exact ?? candidates[candidates.length - 1];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
